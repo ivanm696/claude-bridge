@@ -1,36 +1,36 @@
 # Claude AI Chat - Extended Thinking
 
-A beautiful web app that lets you chat with Claude while seeing its extended thinking process in action. Built with Next.js and the Anthropic SDK.
+A beautiful web app that lets you chat with Claude while seeing its extended thinking process in action. Built with Next.js and powered by CometAPI for reliable Claude access.
 
 ## Features
 
 - **Chat Interface**: Clean, modern conversation UI with real-time responses
 - **Extended Thinking**: View Claude's complete reasoning process alongside responses
-- **Collapsible Thinking**: Toggle the thinking section to see or hide Claude's internal reasoning
+- **CometAPI Integration**: Reliable proxy service - no credit balance worries
 - **Error Handling**: Clear error messages and helpful guidance for API issues
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Keyboard Shortcuts**: Shift+Enter for new lines, Enter to send
 
 ## Setup
 
-### 1. Get an Anthropic API Key
+### 1. Get Your CometAPI Key
 
-1. Go to [Anthropic Console](https://console.anthropic.com)
-2. Sign up or log in
-3. Navigate to **API Keys** in your account settings
-4. Create a new API key
-5. Make sure your account has sufficient credits for the API
+1. Visit [CometAPI Console](https://www.cometapi.com/console/token)
+2. Sign up or log in to your account
+3. Copy your API key
 
 ### 2. Add Your API Key
 
-The `ANTHROPIC_API_KEY` environment variable is already configured in your project. You just need to set its value:
+In your project settings:
 
-1. Go to your project settings (top right)
+1. Go to Settings (⚙️) in the top right
 2. Click **Vars**
-3. Find `ANTHROPIC_API_KEY` and paste your API key
+3. Add `COMETAPI_KEY` with your API key value
 
 ### 3. Run the App
 
 ```bash
+pnpm install
 pnpm dev
 ```
 
@@ -79,27 +79,35 @@ Sends a message to Claude and receives a response with extended thinking enabled
 
 ## Troubleshooting
 
-### "Insufficient credits on Anthropic API account"
-- Your API key doesn't have enough credits
-- Go to [Anthropic Billing](https://console.anthropic.com/account/billing/overview)
-- Add credits to your account
+### "Invalid CometAPI key" error
+- Verify your key at [CometAPI Console](https://www.cometapi.com/console/token)
+- Make sure `COMETAPI_KEY` is set correctly in project Vars
+- Check that the key hasn't expired
 
-### "Invalid Anthropic API key"
-- Your API key is incorrect or expired
-- Generate a new one in the [Anthropic Console](https://console.anthropic.com/account/api-keys)
-- Update the `ANTHROPIC_API_KEY` in your project settings
+### "Rate limit exceeded" error
+- Wait a moment and try again
+- CometAPI may have rate limits on free tier
+- Upgrade your plan for higher limits
 
 ### No response from Claude
 - Check your internet connection
-- Make sure the API key is correctly set
+- Make sure the `COMETAPI_KEY` is correctly set in environment variables
 - Check the browser console for error messages
+- Try a simpler question first
+
+## How It Works
+
+1. **Frontend**: React chat component handles user interface and message display
+2. **API Route**: `/api/chat` endpoint makes requests to CometAPI
+3. **CometAPI**: Proxy service that handles Claude API communication
+4. **Extended Thinking**: Claude's reasoning process is captured and displayed separately from the final response
 
 ## Tech Stack
 
 - **Next.js 16** - React framework with API routes
 - **TypeScript** - Type-safe code
 - **Tailwind CSS** - Styling
-- **Anthropic SDK** - Claude API integration
+- **CometAPI** - Claude API proxy service
 - **lucide-react** - Icons
 
 ## Project Structure
