@@ -18,10 +18,32 @@ export async function POST(request: Request) {
     })
 
     return Response.json(response)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Claude API error:', error)
+    
+    // Handle specific error types
+    if (error.status === 400 && error.error?.message?.includes('credit')) {
+      return Response.json(
+        { 
+          error: 'Insufficient credits on Anthropic API account. Please add credits at https://console.anthropic.com/account/billing/overview',
+          type: 'insufficient_credits'
+        },
+        { status: 400 }
+      )
+    }
+    
+    if (error.status === 401) {
+      return Response.json(
+        { 
+          error: 'Invalid Anthropic API key. Check your ANTHROPIC_API_KEY environment variable.',
+          type: 'invalid_api_key'
+        },
+        { status: 401 }
+      )
+    }
+    
     return Response.json(
-      { error: 'Failed to get response from Claude' },
+      { error: 'Failed to get response from Claude. Please try again.' },
       { status: 500 }
     )
   }

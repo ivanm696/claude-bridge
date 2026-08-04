@@ -46,7 +46,10 @@ export default function ChatInterface() {
         }),
       })
 
-      if (!response.ok) throw new Error('Failed to get response')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to get response')
+      }
 
       const data = await response.json()
 
@@ -69,13 +72,23 @@ export default function ChatInterface() {
       }
 
       setMessages((prev) => [...prev, assistantMessage])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error:', error)
+      let errorMessage = 'Sorry, I encountered an error. Please try again.'
+      
+      if (error.message?.includes('credit')) {
+        errorMessage = 'Insufficient credits on Anthropic API account. Please add credits at https://console.anthropic.com/account/billing/overview'
+      } else if (error.message?.includes('API key')) {
+        errorMessage = 'Invalid Anthropic API key. Please check your ANTHROPIC_API_KEY environment variable.'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: errorMessage,
         },
       ])
     } finally {
