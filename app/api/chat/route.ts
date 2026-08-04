@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: process.env.ANTHROPIC_API_KEY_2,
 })
 
 export async function POST(request: Request) {
@@ -9,17 +9,18 @@ export async function POST(request: Request) {
     const { messages } = await request.json()
 
     const response = await client.messages.create({
-      model: 'claude-opus-5',
-      max_tokens: 20000,
+      model: 'claude-3-7-sonnet-20250219',
+      max_tokens: 16000,
       messages,
       thinking: {
         type: 'adaptive',
+        budget_tokens: 10000,
       },
-    })
+    } as any)
 
     return Response.json(response)
   } catch (error: any) {
-    console.error('Claude API error:', error)
+    console.error('[v0] Claude API error:', error.message || error)
     
     // Handle specific error types
     if (error.status === 400 && error.error?.message?.includes('credit')) {
@@ -35,15 +36,25 @@ export async function POST(request: Request) {
     if (error.status === 401) {
       return Response.json(
         { 
-          error: 'Invalid Anthropic API key. Check your ANTHROPIC_API_KEY environment variable.',
+          error: 'Invalid Anthropic API key. Check your ANTHROPIC_API_KEY_2 environment variable.',
           type: 'invalid_api_key'
         },
         { status: 401 }
       )
     }
+
+    if (error.message?.includes('model') || error.message?.includes('not found')) {
+      return Response.json(
+        { 
+          error: `Model error: ${error.message}. Please check the model name.`,
+          type: 'model_error'
+        },
+        { status: 400 }
+      )
+    }
     
     return Response.json(
-      { error: 'Failed to get response from Claude. Please try again.' },
+      { error: `Error: ${error.message || 'Failed to get response from Claude'}` },
       { status: 500 }
     )
   }
