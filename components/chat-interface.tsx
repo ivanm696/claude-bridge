@@ -47,8 +47,14 @@ export default function ChatInterface() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to get response')
+        const errorData = await response.json().catch(() => ({}))
+        // errorData.error may itself be an object (Anthropic-style nested error);
+        // always coerce to a plain string so we never throw new Error(objectValue).
+        const message =
+          typeof errorData.error === 'string'
+            ? errorData.error
+            : errorData.error?.message || 'Failed to get response'
+        throw new Error(message)
       }
 
       const data = await response.json()
