@@ -1,3 +1,9 @@
-git add vercel.json
-git commit -m "Add vercel.json to fix build error"
-git push
+{
+  "version": 2,
+  "builds": [
+    { "src": "package.json", "use": "@vercel/next" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
