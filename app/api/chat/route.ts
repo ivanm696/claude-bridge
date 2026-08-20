@@ -9,7 +9,7 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-opus-5',
+        model: 'claude-opus-4-8',
         max_tokens: 16000,
         messages,
         thinking: {
@@ -22,6 +22,13 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       console.error('[v0] CometAPI error:', response.status, errorData)
+
+      // Anthropic-style errors look like: { type: 'error', error: { type: '...', message: '...' } }
+      // errorData.error can be an OBJECT, not a string — always resolve to a plain string here.
+      const errorMessage =
+        typeof errorData.error === 'string'
+          ? errorData.error
+          : errorData.error?.message || errorData.message || 'Failed to get response from Claude'
 
       if (response.status === 401) {
         return Response.json(
@@ -44,7 +51,7 @@ export async function POST(request: Request) {
       }
 
       return Response.json(
-        { error: errorData.error || 'Failed to get response from Claude' },
+        { error: errorMessage },
         { status: response.status }
       )
     }
@@ -54,7 +61,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('[v0] Claude API error:', error.message || error)
     return Response.json(
-      { error: `Error: ${error.message || 'Failed to get response from Claude'}` },
+      { error: error.message || 'Failed to get response from Claude' },
       { status: 500 }
     )
   }
