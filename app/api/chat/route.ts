@@ -25,28 +25,50 @@ export async function POST(request: Request) {
       )
     }
 
-    const response = await fetch('https://api.cometapi.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-8',
-        max_tokens: 16000,
-        messages,
-        thinking: {
-          type: 'adaptive',
-          budget_tokens: 10000,
-        },
-      }),
-    })
+    const basePayload = {
+      model: 'claude-opus-4-8',
+      max_tokens: 16000,
+      messages,
+    }
 
-    let responseData: any = {}
-    try {
-      responseData = await response.json()
-    } catch {
-      responseData = {}
+    const thinkingPayload = {
+      ...basePayload,
+      thinking: {
+        type: 'adaptive',
+        budget_tokens: 10000,
+      },
+    }
+
+    // helper to send to CometAPI
+    const send = async (payload: any) => {
+      const res = await fetch('https://api.cometapi.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+      let data: any = {}
+      try {
+        data = await res.json()
+      } catch {
+        data = {}
+      }
+      return { res, data }
+    }
+
+    // First attempt: include 'thinking' (CometAPI feature)
+    let { res: response, data: responseData } = await send(thinkingPayload)
+
+    // If Bedrock/validation error about adaptive.budget_tokens occurs, retry without 'thinking'
+    const isBedrockValidationError =
+      response.status === 400 &&
+      (typeof responseData?.message === 'string' && responseData.message.includes('adaptive.budget_tokens'))
+
+    if (isBedrockValidationError) {
+      console.warn('[v0] CometAPI -> Bedrock validation error detected. Retrying without thinking payload.')
+      ;({ res: response, data: responseData } = await send(basePayload))
     }
 
     if (!response.ok) {
@@ -55,9 +77,7 @@ export async function POST(request: Request) {
       const errorMessage =
         typeof responseData?.error === 'string'
           ? responseData.error
-          : responseData?.error?.message ||
-            responseData?.message ||
-            'Failed to get response from Claude'
+          : responseData?.error?.message || responseData?.message || 'Failed to get response from Claude'
 
       if (response.status === 401) {
         return NextResponse.json(
