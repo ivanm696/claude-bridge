@@ -1,8 +1,18 @@
 import { NextResponse } from 'next/server'
 
+export const runtime = 'nodejs'
+
 export async function POST(request: Request) {
   try {
-    const { messages } = await request.json()
+    const body = await request.json().catch(() => null)
+    const messages = Array.isArray(body?.messages) ? body.messages : []
+
+    if (!messages.length) {
+      return NextResponse.json(
+        { error: 'No messages provided.', type: 'invalid_request' },
+        { status: 400 }
+      )
+    }
 
     const apiKey = process.env.COMETAPI_KEY?.trim()
     if (!apiKey) {
@@ -32,14 +42,22 @@ export async function POST(request: Request) {
       }),
     })
 
+    let responseData: any = {}
+    try {
+      responseData = await response.json()
+    } catch {
+      responseData = {}
+    }
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      console.error('[v0] CometAPI error:', response.status, errorData)
+      console.error('[v0] CometAPI error:', response.status, responseData)
 
       const errorMessage =
-        typeof errorData.error === 'string'
-          ? errorData.error
-          : errorData.error?.message || errorData.message || 'Failed to get response from Claude'
+        typeof responseData?.error === 'string'
+          ? responseData.error
+          : responseData?.error?.message ||
+            responseData?.message ||
+            'Failed to get response from Claude'
 
       if (response.status === 401) {
         return NextResponse.json(
@@ -61,18 +79,24 @@ export async function POST(request: Request) {
         )
       }
 
+      return NextResponse.json({ error: errorMessage }, { status: response.status })
+    }
+
+    if (!responseData || !Array.isArray(responseData.content)) {
       return NextResponse.json(
-        { error: errorMessage },
-        { status: response.status }
+        {
+          error: 'Invalid response format from CometAPI.',
+          type: 'invalid_response',
+        },
+        { status: 502 }
       )
     }
 
-    const data = await response.json()
-    return NextResponse.json(data)
+    return NextResponse.json(responseData)
   } catch (error: any) {
-    console.error('[v0] Claude API error:', error.message || error)
+    console.error('[v0] Claude API error:', error?.message || error)
     return NextResponse.json(
-      { error: error.message || 'Failed to get response from Claude' },
+      { error: error?.message || 'Failed to get response from Claude' },
       { status: 500 }
     )
   }
